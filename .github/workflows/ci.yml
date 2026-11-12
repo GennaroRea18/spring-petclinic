@@ -1,0 +1,37 @@
+name: Spring PetClinic CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build and Test with Java
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17 # Spring PetClinic generalmente usa Java 17 o superiore. Verifica la tua versione in pom.xml (proprietà java.version)
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'maven' # Questa riga sostituisce l'azione "actions/cache" separata, semplificando il caching.
+
+    - name: Run Maven Build and Tests
+      run: ./mvnw clean test # Usa ./mvnw invece di mvn per utilizzare il wrapper Maven incluso nel progetto
+
+    - name: Package Application (Optional, if tests pass)
+      run: ./mvnw package -DskipTests
+
+    - name: Upload JAR artifact
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: spring-petclinic-artifact
+        path: target/*.jar
+        retention-days: 7
