@@ -25,33 +25,67 @@ import jakarta.validation.constraints.Size;
  *
  * @author Ken Krebs
  */
+// @formatter:off
 @MappedSuperclass
 public class Person extends BaseEntity {
 
 	@Column(length = 30)
 	@Size(max = 30)
 	@NotBlank
-	private String firstName;
+	//@ spec_public
+	private /*@ nullable @*/ String firstName;
+	//-RAC@ in modelString;
 
 	@Column(length = 30)
 	@Size(max = 30)
 	@NotBlank
-	private String lastName;
+	//@ spec_public
+	private /*@ nullable @*/ String lastName;
+	//-RAC@ in modelString;
 
-	public String getFirstName() {
+	//@ public invariant firstName == null || firstName.length() <= 30;
+	//@ public invariant lastName == null || lastName.length() <= 30;
+
+	//@ public normal_behavior
+	//@ ensures this.id == null;
+	//@ ensures this.firstName == null;
+	//@ ensures this.lastName == null;
+	//@ pure
+	public Person() {
+		super();
+		this.firstName = null;
+		this.lastName = null;
+	}
+
+	//@ public normal_behavior
+	//@ ensures \result == this.firstName;
+	//@ spec_pure
+	public /*@ nullable @*/ String getFirstName() {
 		return this.firstName;
 	}
 
-	public void setFirstName(String firstName) {
+	//@ public normal_behavior
+	//@ requires firstName == null || firstName.length() <= 30;
+	//@ assignable this.firstName;
+	//@ ensures this.firstName == firstName;
+	public void setFirstName(/*@ nullable @*/ String firstName) {
 		this.firstName = firstName;
 	}
 
-	public String getLastName() {
+	//@ public normal_behavior
+	//@ ensures \result == this.lastName;
+	//@ spec_pure
+	public /*@ nullable @*/ String getLastName() {
 		return this.lastName;
 	}
 
-	public void setLastName(String lastName) {
+	//@ public normal_behavior
+	//@ requires lastName == null || lastName.length() <= 30;
+	//@ assignable this.lastName;
+	//@ ensures this.lastName == lastName;
+	public void setLastName(/*@ nullable @*/ String lastName) {
 		this.lastName = lastName;
 	}
 
 }
+// @formatter:on

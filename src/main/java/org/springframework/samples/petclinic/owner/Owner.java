@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2012-2025 the original author or authors.
  *
@@ -13,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.samples.petclinic.owner;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import org.springframework.core.style.ToStringCreator;
 import org.springframework.samples.petclinic.model.Person;
-import org.springframework.util.Assert;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -45,144 +45,357 @@ import jakarta.validation.constraints.Size;
  * @author Oliver Drotbohm
  * @author Wick Dynex
  */
+
+// @formatter:off
 @Entity
 @Table(name = "owners")
 public class Owner extends Person {
 
-	@Column
+    @Column
 	@NotBlank
 	@Size(max = 255)
-	private String address;
+	//@ spec_public
+	private /*@ nullable @*/ String address;
+	//-RAC@ in modelString;
 
 	@Column
 	@NotBlank
 	@Size(max = 80)
-	private String city;
+	//@ spec_public
+	private /*@ nullable @*/ String city;
+	//-RAC@ in modelString;
 
 	@Column
 	@NotBlank
 	@Pattern(regexp = "\\d{10}", message = "{telephone.invalid}")
-	private String telephone;
+	//@ spec_public
+	private /*@ nullable @*/ String telephone;
+	//-RAC@ in modelString;
 
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@JoinColumn(name = "owner_id")
 	@OrderBy("name")
+	//@ spec_public
 	private final List<Pet> pets = new ArrayList<>();
 
-	public String getAddress() {
-		return this.address;
-	}
+    // Class invariants
 
-	public void setAddress(String address) {
-		this.address = address;
-	}
+	//@ public invariant pets != null;
+	//@ public invariant address == null || address.length() <= 255;
+	//@ public invariant city == null || city.length() <= 80;
 
-	public String getCity() {
-		return this.city;
-	}
+	/*-RAC@
+	@ public normal_behavior
+	@ reads \everything;
+	@ ensures \result == \string.of(value, 10);
+	@ public static model helper spec_pure \string decimalChars(int value) {
+	@     String text = Integer.toString(value);
+	@     return text.chars;
+	@ }
+	@*/
 
-	public void setCity(String city) {
-		this.city = city;
-	}
+	/*-RAC@
+	@ public represents modelString =
+	@     "Owner[id=".chars
+	@     + (id == null ? "null".chars : decimalChars(id.intValue()))
+	@     + ", new=".chars
+	@     + (id == null ? "true".chars : "false".chars)
+	@     + ", lastName=".chars
+	@     + (lastName == null ? "null" : lastName).chars
+	@     + ", firstName=".chars
+	@     + (firstName == null ? "null" : firstName).chars
+	@     + ", address=".chars
+	@     + (address == null ? "null" : address).chars
+	@     + ", city=".chars
+	@     + (city == null ? "null" : city).chars
+	@     + ", telephone=".chars
+	@     + (telephone == null ? "null" : telephone).chars
+	@     + "]".chars;
+	@*/
 
-	public String getTelephone() {
-		return this.telephone;
-	}
+    // Constructor
 
-	public void setTelephone(String telephone) {
-		this.telephone = telephone;
-	}
+    //@ public normal_behavior
+    //@ ensures this.id == null;
+    //@ ensures this.firstName == null;
+    //@ ensures this.lastName == null;
+    //@ ensures this.address == null;
+    //@ ensures this.city == null;
+    //@ ensures this.telephone == null;
+    //@ ensures this.pets != null;
+    //@ pure
+    public Owner() {
+        super();
+        this.address = null;
+        this.city = null;
+        this.telephone = null;
+    }
 
-	public List<Pet> getPets() {
-		return this.pets;
-	}
+    // Address
 
-	public void addPet(Pet pet) {
-		if (pet == null) {
-			return;
+    //@ public normal_behavior
+    //@ ensures \result == this.address;
+    //@ spec_pure
+    public /*@ nullable @*/ String getAddress() {
+        return this.address;
+    }
+
+    //@ public normal_behavior
+    //@ requires address == null || address.length() <= 255;
+    //@ assignable this.address;
+    //@ ensures this.address == address;
+    public void setAddress(/*@ nullable @*/ String address) {
+        this.address = address;
+    }
+
+    // City
+
+    //@ public normal_behavior
+    //@ ensures \result == this.city;
+    //@ spec_pure
+    public /*@ nullable @*/ String getCity() {
+        return this.city;
+    }
+
+    //@ public normal_behavior
+    //@ requires city == null || city.length() <= 80;
+    //@ assignable this.city;
+    //@ ensures this.city == city;
+    public void setCity(/*@ nullable @*/ String city) {
+        this.city = city;
+    }
+
+    // Telephone
+
+    //@ public normal_behavior
+    //@ ensures \result == this.telephone;
+    //@ spec_pure
+    public /*@ nullable @*/ String getTelephone() {
+        return this.telephone;
+    }
+
+    //@ public normal_behavior
+    //@ assignable this.telephone;
+    //@ ensures this.telephone == telephone;
+    public void setTelephone(/*@ nullable @*/ String telephone) {
+        this.telephone = telephone;
+    }
+
+    // Pets
+
+    //@ public normal_behavior
+    //@ ensures \result != null;
+    //@ ensures \result == this.pets;
+    //@ spec_pure
+    public List<Pet> getPets() {
+        return this.pets;
+    }
+
+    //@ public behavior
+    //@ ensures pets.size() >= \old(pets.size());
+    //@ ensures (\bigint) pets.size() <= (\bigint) \old(pets.size()) + 1;
+    //@ ensures pet == null ==> pets.size() == \old(pets.size());
+    //@ ensures pet != null && \old(pets.contains(pet))
+    //@     ==> pets.size() == \old(pets.size());
+    //@ signals_only RuntimeException;
+    public void addPet(/*@ nullable @*/ Pet pet) {
+
+        if (pet == null) {
+            return;
+        }
+
+        if (getPets().contains(pet)) {
+            return;
+        }
+
+        List<Pet> currentPets = getPets();
+
+        //@ loop_invariant 0 <= i && i <= currentPets.size();
+		//-RAC@ loop_writes i;
+		//@ decreases currentPets.size() - i;
+        for (int i = 0; i < currentPets.size(); i++) {
+
+            Pet existingPet = currentPets.get(i);
+
+            if (!existingPet.isNew() && !pet.isNew()
+                    && Objects.equals(existingPet.getId(), pet.getId())) {
+                return;
+            }
+        }
+
+        getPets().add(pet);
+    }
+
+    /**
+     * Return the Pet with the given name,
+     * or null if none found for this Owner.
+     */
+
+    //@ public behavior
+	//@ assignable \nothing;
+    //@ ensures \result == null || pets.contains(\result);
+    //@ signals_only RuntimeException;
+    public /*@ nullable @*/ Pet getPet(
+            /*@ nullable @*/ String name) {
+
+        return getPet(name, false);
+    }
+
+    /**
+     * Return the Pet with the given id,
+     * or null if none found for this Owner.
+     */
+
+    //@ public behavior
+	//@ assignable \nothing;
+	//@ ensures \result == null || pets.contains(\result);
+	//@ ensures \result != null ==> !\result.isNew();
+	//@ ensures \result != null ==> \result.getId() != null;
+	//@ ensures \result != null ==> id != null;
+	//@ ensures \result != null ==> 
+	//@     \result.getId().intValue() == id.intValue();
+	//@ signals_only RuntimeException;
+	public /*@ nullable @*/ Pet getPet(
+			/*@ nullable @*/ Integer id) {
+
+		if (id == null) {
+			return null;
 		}
-		if (getPets().contains(pet)) {
-			return;
-		}
-		for (Pet existingPet : getPets()) {
-			if (!existingPet.isNew() && !pet.isNew() && Objects.equals(existingPet.getId(), pet.getId())) {
-				return;
+
+		List<Pet> currentPets = getPets();
+
+		//@ loop_invariant 0 <= i && i <= currentPets.size();
+		//-RAC@ loop_writes i;
+		//@ decreases currentPets.size() - i;
+		for (int i = 0; i < currentPets.size(); i++) {
+
+			Pet pet = currentPets.get(i);
+
+			/*@ nullable @*/ Integer compId = pet.getId();
+
+			if (compId != null
+					&& compId.intValue() == id.intValue()) {
+				return pet;
 			}
 		}
-		getPets().add(pet);
-	}
 
-	/**
-	 * Return the Pet with the given name, or null if none found for this Owner.
-	 * @param name to test
-	 * @return the Pet with the given name, or null if no such Pet exists for this Owner
-	 */
-	public Pet getPet(String name) {
-		return getPet(name, false);
-	}
-
-	/**
-	 * Return the Pet with the given id, or null if none found for this Owner.
-	 * @param id to test
-	 * @return the Pet with the given id, or null if no such Pet exists for this Owner
-	 */
-	public Pet getPet(Integer id) {
-		for (Pet pet : getPets()) {
-			if (!pet.isNew()) {
-				Integer compId = pet.getId();
-				if (Objects.equals(compId, id)) {
-					return pet;
-				}
-			}
-		}
 		return null;
 	}
 
-	/**
-	 * Return the Pet with the given name, or null if none found for this Owner.
-	 * @param name to test
-	 * @param ignoreNew whether to ignore new pets (pets that are not saved yet)
-	 * @return the Pet with the given name, or null if no such Pet exists for this Owner
-	 */
-	public Pet getPet(String name, boolean ignoreNew) {
-		for (Pet pet : getPets()) {
-			String compName = pet.getName();
+    /**
+     * Return the Pet with the given name,
+     * optionally ignoring new pets.
+     */
+
+    //@ public behavior
+	//@ assignable \nothing;
+	//@ ensures \result == null || pets.contains(\result);
+	//@ ensures \result != null && ignoreNew ==> !\result.isNew();
+	//@ ensures \result != null ==> \result.getName() != null;
+	//@ ensures \result != null ==> name != null;
+	//@ signals_only RuntimeException;
+	public /*@ nullable @*/ Pet getPet(
+			/*@ nullable @*/ String name, boolean ignoreNew) {
+
+		if (name == null) {
+			return null;
+		}
+
+		List<Pet> currentPets = getPets();
+
+		//@ loop_invariant 0 <= i && i <= currentPets.size();
+		//-RAC@ loop_writes i;
+		//@ decreases currentPets.size() - i;
+		for (int i = 0; i < currentPets.size(); i++) {
+
+			Pet pet = currentPets.get(i);
+
+			/*@ nullable @*/ String compName = pet.getName();
+
 			if (compName != null && compName.equalsIgnoreCase(name)) {
+
 				if (!ignoreNew || !pet.isNew()) {
 					return pet;
 				}
 			}
 		}
+
 		return null;
 	}
 
+    //@ also
+	//@ public normal_behavior
+	//@ ensures \result != null;
+	//@ assignable \nothing;
 	@Override
 	public String toString() {
-		return new ToStringCreator(this).append("id", this.getId())
-			.append("new", this.isNew())
-			.append("lastName", this.getLastName())
-			.append("firstName", this.getFirstName())
-			.append("address", this.address)
-			.append("city", this.city)
-			.append("telephone", this.telephone)
-			.toString();
+
+		/*@ nullable @*/ Integer ownerId = getId();
+		/*@ nullable @*/ String ownerFirstName = getFirstName();
+		/*@ nullable @*/ String ownerLastName = getLastName();
+
+		return "Owner[id="
+			.concat(ownerId == null
+				? "null" : Integer.toString(ownerId.intValue()))
+			.concat(", new=")
+			.concat(ownerId == null ? "true" : "false")
+			.concat(", lastName=")
+			.concat(ownerLastName == null ? "null" : ownerLastName)
+			.concat(", firstName=")
+			.concat(ownerFirstName == null ? "null" : ownerFirstName)
+			.concat(", address=")
+			.concat(address == null ? "null" : address)
+			.concat(", city=")
+			.concat(city == null ? "null" : city)
+			.concat(", telephone=")
+			.concat(telephone == null ? "null" : telephone)
+			.concat("]");
 	}
 
-	/**
-	 * Adds the given {@link Visit} to the {@link Pet} with the given identifier.
-	 * @param petId the identifier of the {@link Pet}, must not be {@literal null}.
-	 * @param visit the visit to add, must not be {@literal null}.
-	 */
+    /**
+     * Adds the given Visit to the Pet
+     * with the given identifier.
+     */
+
+    //@ public behavior
+	//@ requires petId != null;
+	//@ requires visit != null;
+	//@ ensures pets.size() == \old(pets.size());
+	//@ signals_only RuntimeException;
 	public void addVisit(Integer petId, Visit visit) {
 
-		Assert.notNull(petId, "Pet identifier must not be null!");
-		Assert.notNull(visit, "Visit must not be null!");
+		//@ ghost int initialPetCount = pets.size();
 
-		Pet pet = getPet(petId);
+		if (petId == null) {
+			throw new IllegalArgumentException(
+				"Pet identifier must not be null!");
+		}
 
-		Assert.notNull(pet, "Invalid Pet identifier!");
+		if (visit == null) {
+			throw new IllegalArgumentException(
+				"Visit must not be null!");
+		}
+
+		/*@ nullable @*/ Pet pet = getPet(petId);
+
+		if (pet == null) {
+			throw new IllegalArgumentException(
+				"Invalid Pet identifier!");
+		}
+
+		//@ assert pets.size() == initialPetCount;
+
+		if ((Object) this.pets == (Object) pet.getVisits()) {
+			throw new IllegalStateException(
+				"Pets and visits must be distinct collections!");
+		}
+
+		//@ assert (Object) this.pets != (Object) pet.visits;
 
 		pet.addVisit(visit);
+
+		//@ assert pets.size() == initialPetCount;
 	}
 
 }
+// @formatter:on

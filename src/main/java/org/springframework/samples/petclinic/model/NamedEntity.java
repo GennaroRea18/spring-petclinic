@@ -27,25 +27,52 @@ import jakarta.validation.constraints.NotBlank;
  * @author Juergen Hoeller
  * @author Wick Dynex
  */
+// @formatter:off
 @MappedSuperclass
 public class NamedEntity extends BaseEntity {
 
 	@Column
 	@NotBlank
-	private String name;
+	//@ spec_public
+	private /*@ nullable @*/ String name;
+	//-RAC@ in modelString;
 
-	public String getName() {
+	//-RAC@ public represents modelString = (name != null ? name : "<null>").chars;
+
+	//@ public normal_behavior
+	//@ ensures this.name == null;
+	//@ ensures this.id == null;
+	//@ pure
+	public NamedEntity() {
+		super();
+		this.name = null;
+	}
+
+	//@ public normal_behavior
+	//@ ensures \result == this.name;
+	//@ spec_pure
+	public /*@ nullable @*/ String getName() {
 		return this.name;
 	}
 
-	public void setName(String name) {
+	//@ public normal_behavior
+	//@ assignable this.name;
+	//@ ensures this.name == name;
+	public void setName(/*@ nullable @*/ String name) {
 		this.name = name;
 	}
 
+	//@ also
+	//@ public normal_behavior
+	//@ ensures \result != null;
+	//@ ensures this.name != null ==> \result == this.name;
+	//@ ensures this.name == null ==> \result.equals("<null>");
+	//@ spec_pure
 	@Override
 	public String toString() {
-		String name = this.getName();
+		/*@ nullable @*/ String name = this.getName();
 		return name != null ? name : "<null>";
 	}
 
 }
+// @formatter:on

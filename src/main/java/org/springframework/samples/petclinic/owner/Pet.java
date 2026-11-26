@@ -41,45 +41,91 @@ import jakarta.persistence.Table;
  * @author Sam Brannen
  * @author Wick Dynex
  */
+// @formatter:off
 @Entity
 @Table(name = "pets")
 public class Pet extends NamedEntity {
 
 	@Column
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
-	private LocalDate birthDate;
+	//@ spec_public
+	private /*@ nullable @*/ LocalDate birthDate;
 
 	@ManyToOne
 	@JoinColumn(name = "type_id")
-	private PetType type;
+	//@ spec_public
+	private /*@ nullable @*/ PetType type;
 
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@JoinColumn(name = "pet_id")
 	@OrderBy("date ASC")
+	//@ spec_public
 	private final Set<Visit> visits = new LinkedHashSet<>();
 
-	public void setBirthDate(LocalDate birthDate) {
+	//@ public invariant visits != null;
+
+	//@ public behavior
+	//@ ensures this.id == null;
+	//@ ensures this.name == null;
+	//@ ensures this.birthDate == null;
+	//@ ensures this.type == null;
+	//@ ensures this.visits != null;
+	//@ signals_only RuntimeException;
+	//@ pure
+	public Pet() {
+		super();
+		this.birthDate = null;
+		this.type = null;
+	}
+
+	//@ public normal_behavior
+	//@ assignable this.birthDate;
+	//@ ensures this.birthDate == birthDate;
+	public void setBirthDate(/*@ nullable @*/ LocalDate birthDate) {
 		this.birthDate = birthDate;
 	}
 
-	public LocalDate getBirthDate() {
+	//@ public normal_behavior
+	//@ ensures \result == this.birthDate;
+	//@ spec_pure
+	public /*@ nullable @*/ LocalDate getBirthDate() {
 		return this.birthDate;
 	}
 
-	public PetType getType() {
+	//@ public normal_behavior
+	//@ ensures \result == this.type;
+	//@ spec_pure
+	public /*@ nullable @*/ PetType getType() {
 		return this.type;
 	}
 
-	public void setType(PetType type) {
+	//@ public normal_behavior
+	//@ assignable this.type;
+	//@ ensures this.type == type;
+	public void setType(/*@ nullable @*/ PetType type) {
 		this.type = type;
 	}
 
+	//@ public normal_behavior
+	//@ ensures \result == this.visits;
+	//@ ensures \result != null;
+	//@ spec_pure
 	public Collection<Visit> getVisits() {
 		return this.visits;
 	}
 
+	//@ public behavior
+	//@ requires visit != null;
+	//-RAC@ assignable this.visits.values;
+	//+RAC@ assignable this.visits.objectState;
+	//@ ensures visits.contains(visit);
+	//@ ensures visits.size() >= \old(visits.size());
+	//@ ensures (\bigint) visits.size() <=
+	//@     (\bigint) \old(visits.size()) + 1;
+	//@ signals_only RuntimeException;
 	public void addVisit(Visit visit) {
 		getVisits().add(visit);
 	}
 
 }
+// @formatter:on
