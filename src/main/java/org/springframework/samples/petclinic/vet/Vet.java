@@ -19,7 +19,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 import org.springframework.samples.petclinic.model.NamedEntity;
 import org.springframework.samples.petclinic.model.Person;
@@ -40,6 +40,7 @@ import jakarta.xml.bind.annotation.XmlElement;
  * @author Sam Brannen
  * @author Arjen Poutsma
  */
+// @formatter:off
 @Entity
 @Table(name = "vets")
 public class Vet extends Person {
@@ -47,8 +48,23 @@ public class Vet extends Person {
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "vet_specialties", joinColumns = @JoinColumn(name = "vet_id"),
 			inverseJoinColumns = @JoinColumn(name = "specialty_id"))
-	private Set<Specialty> specialties;
+	//@ spec_public
+	private /*@ nullable @*/ Set<Specialty> specialties;
 
+	//@ public normal_behavior
+	//@ ensures this.specialties == null;
+	public Vet() {
+		super();
+		this.specialties = null;
+	}
+
+	//@ protected behavior
+	//@ assignable this.specialties;
+	//@ ensures \result != null;
+	//@ ensures \result == this.specialties;
+	//@ ensures \old(this.specialties) != null ==>
+	//@     this.specialties == \old(this.specialties);
+	//@ signals_only RuntimeException;
 	protected Set<Specialty> getSpecialtiesInternal() {
 		if (this.specialties == null) {
 			this.specialties = new HashSet<>();
@@ -56,19 +72,43 @@ public class Vet extends Person {
 		return this.specialties;
 	}
 
+	//@ public behavior
+	//@ ensures \result != null;
+	//@ ensures specialties != null;
+	//@ ensures \result.size() == specialties.size();
+	//@ signals_only RuntimeException;
 	@XmlElement
 	public List<Specialty> getSpecialties() {
-		return getSpecialtiesInternal().stream()
-			.sorted(Comparator.comparing(NamedEntity::getName))
-			.collect(Collectors.toList());
+
+		Set<Specialty> current = getSpecialtiesInternal();
+
+		List<Specialty> result = new ArrayList<>(current);
+
+		Comparator<NamedEntity> comparator =
+			(a, b) -> a.getName().compareTo(b.getName());
+
+		result.sort(comparator);
+
+		return result;
 	}
 
+	//@ public behavior
+	//@ ensures specialties != null;
+	//@ ensures \result >= 0;
+	//@ ensures \result == specialties.size();
+	//@ signals_only RuntimeException;
 	public int getNrOfSpecialties() {
 		return getSpecialtiesInternal().size();
 	}
 
+	//@ public behavior
+	//@ requires specialty != null;
+	//@ ensures specialties != null;
+	//@ ensures specialties.contains(specialty);
+	//@ signals_only RuntimeException;
 	public void addSpecialty(Specialty specialty) {
 		getSpecialtiesInternal().add(specialty);
 	}
 
 }
+// @formatter:on

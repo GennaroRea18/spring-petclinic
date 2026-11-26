@@ -29,23 +29,46 @@ import jakarta.persistence.MappedSuperclass;
  * @author Ken Krebs
  * @author Juergen Hoeller
  */
+// @formatter:off
 @MappedSuperclass
 public class BaseEntity implements Serializable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+	//@ spec_public
+	private /*@ nullable @*/ Integer id;
+	//-RAC@ in modelString;
 
-	public Integer getId() {
+	//@ public invariant id == null || id.intValue() >= 0;
+
+	//@ public normal_behavior
+	//@ ensures this.id == null;
+	//@ pure
+	public BaseEntity() {
+		this.id = null;
+	}
+
+	//@ public normal_behavior
+	//@ ensures \result == id;
+	//@ spec_pure
+	public /*@ nullable @*/ Integer getId() {
 		return id;
 	}
 
-	public void setId(Integer id) {
+	//@ public normal_behavior
+	//@ requires id == null || id.intValue() >= 0;
+	//@ assignable this.id;
+	//@ ensures this.id == id;
+	public void setId(/*@ nullable @*/ Integer id) {
 		this.id = id;
 	}
 
+	//@ public normal_behavior
+	//@ ensures \result == (this.id == null);
+	//@ spec_pure
 	public boolean isNew() {
 		return this.id == null;
 	}
 
 }
+// @formatter:on

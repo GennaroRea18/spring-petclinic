@@ -1,0 +1,11 @@
+package java.util;
+
+public class LinkedHashSet<E> extends HashSet<E>
+        implements SequencedSet<E>, Cloneable, java.io.Serializable {
+
+    //@ public normal_behavior
+    //@ ensures this.size() == 0;
+    //@ pure
+    public LinkedHashSet();
+
+}
