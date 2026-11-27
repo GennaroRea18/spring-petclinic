@@ -189,3 +189,4 @@ The Spring PetClinic sample application is released under version 2.0 of the [Ap
 - [Lab4a - Coverage Report](coverage.md)
 - [Lab4b - Mutation testing](mutation.md)
 - [Lab5 - JML Report](verification.md)
+- [Lab6- Benchmarking Report](benchmarking.md)

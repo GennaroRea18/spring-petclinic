@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.samples.petclinic.owner;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -24,10 +23,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.validation.Errors;
 import org.springframework.validation.MapBindingResult;
-
 import java.time.LocalDate;
 import java.util.HashMap;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -78,9 +75,7 @@ class PetValidatorTests {
 		pet.setName(petName);
 		pet.setType(petType);
 		pet.setBirthDate(petBirthDate);
-
 		petValidator.validate(pet, errors);
-
 		assertFalse(errors.hasErrors());
 	}
 
@@ -93,9 +88,7 @@ class PetValidatorTests {
 			pet.setName("");
 			pet.setType(petType);
 			pet.setBirthDate(petBirthDate);
-
 			petValidator.validate(pet, errors);
-
 			assertTrue(errors.hasFieldErrors("name"));
 		}
 
@@ -104,9 +97,7 @@ class PetValidatorTests {
 			pet.setName(petName);
 			pet.setType(null);
 			pet.setBirthDate(petBirthDate);
-
 			petValidator.validate(pet, errors);
-
 			assertTrue(errors.hasFieldErrors("type"));
 		}
 
@@ -116,9 +107,7 @@ class PetValidatorTests {
 			pet.setName(petName);
 			pet.setType(petType);
 			pet.setBirthDate(null);
-
 			petValidator.validate(pet, errors);
-
 			assertTrue(errors.hasFieldErrors("birthDate"));
 		}
 
@@ -128,9 +117,7 @@ class PetValidatorTests {
 			pet.setName("A".repeat(31));
 			pet.setType(petType);
 			pet.setBirthDate(petBirthDate);
-
 			petValidator.validate(pet, errors);
-
 			assertTrue(errors.hasFieldErrors("name"));
 		}
 

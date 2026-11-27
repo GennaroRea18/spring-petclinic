@@ -13,18 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.samples.petclinic.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Locale;
 import java.util.Set;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
-
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 
@@ -48,14 +44,11 @@ class ValidatorTests {
 	@Test
 	void shouldNotValidateWhenFirstNameEmpty() {
 		LocaleContextHolder.setLocale(Locale.ENGLISH);
-
 		Person person = new Person();
 		person.setFirstName("");
 		person.setLastName("smith");
-
 		Validator validator = createValidator();
 		Set<ConstraintViolation<Person>> constraintViolations = validator.validate(person);
-
 		ConstraintViolation<Person> violation = getOnlyViolation(constraintViolations);
 		assertThat(violation.getPropertyPath()).hasToString("firstName");
 		assertThat(violation.getMessage()).isEqualTo("must not be blank");
@@ -64,14 +57,11 @@ class ValidatorTests {
 	@Test
 	void shouldNotValidateWhenLastNameEmpty() {
 		LocaleContextHolder.setLocale(Locale.ENGLISH);
-
 		Person person = new Person();
 		person.setFirstName("George");
 		person.setLastName("");
-
 		Validator validator = createValidator();
 		Set<ConstraintViolation<Person>> constraintViolations = validator.validate(person);
-
 		ConstraintViolation<Person> violation = getOnlyViolation(constraintViolations);
 		assertThat(violation.getPropertyPath()).hasToString("lastName");
 		assertThat(violation.getMessage()).isEqualTo("must not be blank");
